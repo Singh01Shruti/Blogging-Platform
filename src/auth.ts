@@ -10,16 +10,13 @@ const prisma = new PrismaClient({
    ,
   }).$extends(withAccelerate())
 
-declare module 'hono' {
-    interface ContextVariableMap{
-        userId : number;
+  declare module 'hono' {
+    interface Context {
+      userId: number;
     }
-}
-
-interface DecodedToken{
-    email : string;
-}
-
+  }
+  
+  
 export const authmiddleware = async (c:Context, next : Next) => {
     const authHeader = c.req.header("Authorization");
 
@@ -42,8 +39,8 @@ export const authmiddleware = async (c:Context, next : Next) => {
             return;
         }
         
-        
-       c.set('userId', 'user.id');
+        c.userId = user.id;
+    
         await next();
     } catch(error) {
         return c.json({ message: 'Unauthorized: Invalid token' }, 401);

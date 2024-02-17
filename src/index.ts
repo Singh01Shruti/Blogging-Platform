@@ -1,18 +1,17 @@
 import { Hono, Context, Next } from 'hono'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
-import jwt from 'jsonwebtoken'
 import { z } from 'zod'
 import { Jwt } from 'hono/utils/jwt'
 import { authmiddleware } from './auth'
-//import { sign } from "hono/jwt";
+
 
 
 const prisma = new PrismaClient({
   datasourceUrl:"prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiNGRkNjc3ZGEtNTM1Yi00Y2IwLWEwOWMtOTVkMWIwMjliMzVjIiwidGVuYW50X2lkIjoiODE0OTE2Y2RhNGJhZDYwZTdiY2Q2Yjk4YTY0ZDZkZjU1ZjE3MDNmYTVlYzZjNjFiZDU3MjNjYjE2ZTFlZWQ4MCIsImludGVybmFsX3NlY3JldCI6ImE2ODY0YTE5LTgwNWEtNDUzNi1iNTRmLTRmMzcyOGM3ZjVkZSJ9.dMRqnlmjMUPJyOZrY_PMCnllSPeaxjsyBA3-n8kLFw0"
  ,
 }).$extends(withAccelerate())
-//const prisma = new PrismaClient().$extends(withAccelerate());
+
 const app = new Hono();
 const JWT_SECRET = "saturday";
 
@@ -70,13 +69,32 @@ app.post('/user/signin', async(c) => {
 });
 
 app.get('/posts', authmiddleware, async(c) => {
-  const id = c.get('userId');
-
+  const userId = c.userId;
   const posts = prisma.blog.findMany({});
-  const userPosts = prisma.blog.findMany({where : {userId : id }});
+  const userPosts = prisma.blog.findMany({where : {userId : userId }});
 
   return c.json({posts, userPosts});
 });
 
+const postBody = z.object({
+  title : z.string(),       
+  body : z.string()
+});
 
+app.post('/posts', authmiddleware, async(c) => {
+  const userId = c.userId;
+  const details = await c.req.json();
+  const {success} = postBody.safeParse(details);
+  const {title, body} = details; 
+
+  if(!success){
+    return c.json(userId);
+  }
+  const post = await prisma.blog.create({data : {title, body, userId}});
+
+  if(post){
+    return c.json({message : "Post created successfully", post});
+  }
+
+});
 export default app
