@@ -97,4 +97,88 @@ app.post('/posts', authmiddleware, async(c) => {
   }
 
 });
+
+app.get('/posts/:id', async(c) => {
+  const userId = c.userId;
+  const postId = parseInt(c.req.param('id').substring(1));
+
+  const post = await prisma.blog.findFirst({
+      where : { 
+      id : postId,
+      userId : userId
+    },
+  });
+
+  if(post){
+    return c.json({
+      data : {
+        title : post.title,
+        body : post.body
+    }})
+  }
+});
+
+app.put('/posts/:id', async(c) => {
+  const userId = c.userId;
+  const postId = parseInt(c.req.param('id').substring(1));
+  const details = await c.req.json();
+  const {title, body} = details; 
+
+  const post = await prisma.blog.findFirst({
+      where : { 
+      id : postId,
+      userId : userId
+    },
+  });
+
+  if(!post){
+    return c.json({message : "No posts available for this ID"})
+  }
+
+  const updatedPost = await prisma.blog.update({
+    where :{
+      id : postId,
+      userId : userId
+    },
+    data: {
+      title: title,
+      body: body,
+    },
+  });
+
+  return c.json({
+    data : {
+      title : updatedPost.title,
+      body : updatedPost.body
+  }});
+
+})
+
+app.delete('/posts/:id', async(c) => {
+  const userId = c.userId;
+  const postId = parseInt(c.req.param('id').substring(1));
+
+  const post = await prisma.blog.findFirst({
+      where : { 
+      id : postId,
+      userId : userId
+    },
+  });
+
+  if(!post){
+    return c.json({message : "No posts available for this ID"})
+  }
+
+  const deletedPost = await prisma.blog.delete({
+      where : { 
+      id : postId,
+      userId : userId
+    },
+  });
+
+  return c.json({
+    message: "post deleted successfully",
+  });
+
+});
 export default app
