@@ -26,5 +26,16 @@ model Blog {
   body        String
   userId      Int
   user        User    @relation(fields: [userId], references: [id])
+  tags        Tag[]   @relation("TagsonBlogs")
 
 }
+
+model Tag {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique     
+  blogs        Blog[]  @relation("TagsonBlogs")
+}
+
+
+
+
